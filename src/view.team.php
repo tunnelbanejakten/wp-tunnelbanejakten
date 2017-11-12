@@ -35,7 +35,7 @@ function tsl_print_nextgen_report($competition_name, $team_name)
         'tsl_team' => ''
     ));
 
-    printf('<h1><a href="%s">TSL</a> &raquo; Tävling <a href="%s">%s</a> &raquo; lag <em>%s</em></h1>',
+    printf('<h1><a href="%s">TSL</a> &raquo; Tävling <a href="%s">%s</a> &raquo; Lag <em>%s</em></h1>',
         $start_url,
         $competition_url,
         $competition_name,
@@ -43,9 +43,9 @@ function tsl_print_nextgen_report($competition_name, $team_name)
 
     printf('<form method="post" action="%s">', add_query_arg());
 
-    printf('<table style="border-collapse: collapse;" border="1"><tbody>');
+    printf('<table style="border-collapse: collapse;" cellpadding="3"><tbody>');
 
-    printf('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>', 'Question (id)', 'Correct Answer(s)', 'Submitted Answer', 'Calculated Points', 'Points');
+    printf('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>', 'Fråga', 'Rätt svar', 'Inskickat', 'Beräknad poäng', 'Korrigerad poäng');
 
     $points_auto_evaluated = tsl_grades_automated($competition_name, $team_name);
 
@@ -73,23 +73,33 @@ function tsl_print_nextgen_report($competition_name, $team_name)
             $correct_answer = "";
         }
         $max_points = $correct_answers[$entry->question_key]['points'];
-        $auto_points = $points_auto_evaluated[$entry->question_key];
-        printf('<tr>' .
-            '<td><kbd>%s</kbd>: %s</td>' .
-            '<td>%s</td>' .
-            '<td>%s</td>' .
-            '<td style="background-color: %s">%s %s</td>' .
-            '<td><input type="text" name="question_%s_points_override" value="%s" size="5"/></td>' .
-            '</tr>',
-            $entry->question_key,
-            $entry->question_text,
-            $correct_answer,
-            $submitted_answer,
-            empty($submitted_answer) ? COLOR_YELLOW : ($auto_points == $max_points ? COLOR_GREEN : COLOR_RED),
-            (float)$auto_points,
-            $max_points > 0 ? "av $max_points" : "",
-            $entry->question_key,
-            $points_overrides[$entry->question_key]);
+        $is_readonly = QUESTION_GRADING_TYPE_IGNORE == $correct_answers[$entry->question_key]['type'];
+        if ($is_readonly) {
+            $auto_points = $points_auto_evaluated[$entry->question_key];
+            printf('<tr>' .
+                '<td colspan="5"><kbd>%s</kbd>: %s</td>' .
+                '</tr>',
+                $entry->question_key,
+                $entry->question_text);
+        } else {
+            $auto_points = $points_auto_evaluated[$entry->question_key];
+            printf('<tr>' .
+                '<td><kbd>%s</kbd>: %s</td>' .
+                '<td><small><em>%s</em></small></td>' .
+                '<td>%s</td>' .
+                '<td style="background-color: %s">%s %s</td>' .
+                '<td><input type="text" name="question_%s_points_override" value="%s" size="5"/></td>' .
+                '</tr>',
+                $entry->question_key,
+                $entry->question_text,
+                $correct_answer,
+                $submitted_answer,
+                empty($submitted_answer) ? COLOR_YELLOW : ($auto_points == $max_points ? COLOR_GREEN : COLOR_RED),
+                (float)$auto_points,
+                $max_points > 0 ? "av $max_points" : "",
+                $entry->question_key,
+                $points_overrides[$entry->question_key]);
+        }
         $prev_form_name = $entry->form_name;
     }
 
