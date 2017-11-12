@@ -23,6 +23,7 @@ function tsl_print_competition_page($competition_name)
     printf('<p><a href="%s">Rätt svar</a></p>', $url);
 
     printf('<h2>Lag</h2>', $url);
+    printf('<ul>');
     $teams = tsl_get_team_list();
     foreach ($teams as $team) {
         if ($team->team_name) {
@@ -30,11 +31,12 @@ function tsl_print_competition_page($competition_name)
                 'tsl_report' => 'nextgen',
                 'tsl_team' => $team->team_name
             ));
-            printf('<p><a href="%s">%s</a></p>', $url, $team->team_name);
+            printf('<li><a href="%s">%s</a></li>', $url, $team->team_name);
         } else {
-            printf('<p>%s</p>', $team->team_name);
+            printf('<li>%s</li>', $team->team_name);
         }
     }
+    printf('</ul>');
 }
 
 function tsl_get_team_list()

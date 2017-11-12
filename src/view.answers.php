@@ -6,9 +6,21 @@ function tsl_print_answers_form($competition_name)
 {
     $question_types = [
         QUESTION_GRADING_TYPE_IGNORE => "Rätta inte",
-        QUESTION_GRADING_TYPE_SUBMITTED_ANSWER_IS_POINTS => "Poäng som svar",
-        QUESTION_GRADING_TYPE_ONE_OF => "Poäng om ett av dessa alternativ",
-        QUESTION_GRADING_TYPE_ALL_OF => "Poäng om alla dessa alternativ"
+        QUESTION_GRADING_TYPE_SUBMITTED_ANSWER_IS_POINTS => "Svaret är poängen",
+        QUESTION_GRADING_TYPE_ONE_OF => "Ge poäng för ett av dessa:",
+        QUESTION_GRADING_TYPE_ALL_OF => "Ge poäng om alla dessa angivits:"
+    ];
+
+    $question_type_descriptions = [
+        QUESTION_GRADING_TYPE_IGNORE => "Detta är inte något som poängsätts över huvud taget.",
+        QUESTION_GRADING_TYPE_SUBMITTED_ANSWER_IS_POINTS => "Svaret är i själva verket lagets poäng. " .
+            "Är till för formulären som funktionärerna använder. Kräver ingen parameter. Poängfältet är maxpoäng.",
+        QUESTION_GRADING_TYPE_ONE_OF => 'Laget får full poäng om det skickat in ett av alternativen som angetts i ' .
+            'Parameter-fältet. Flera korrekta svar kan anges och ska då skiljas med ett semikolon, ex. "Antilop;antelop". ' .
+            'Bra för frågor som bara har ett svar men där stavningen kan vara knepig.',
+        QUESTION_GRADING_TYPE_ALL_OF => "Laget får full poäng om det skickat in samtliga av alternativen som " .
+            "angetts i Parameter-fältet. De förväntade svaren skiljs åt med ett semikolon. Används för fotoserier där " .
+            "poäng bara delas ut om alla fotografier i serien har rapporterats in."
     ];
 
     $entries = tsl_sql_questions('team', $competition_name);
@@ -51,6 +63,10 @@ function tsl_print_answers_form($competition_name)
         $start_url,
         $competition_url,
         $competition_name);
+
+    printf('<p><small>För varje fråga kan du välja om, och hur, den ska rättas och poängsättas: <br>%s</small></p>', join('<br>', array_map(function ($type, $descr) {
+        return "<strong>$type</strong>: $descr";
+    }, array_values($question_types), array_values($question_type_descriptions))));
 
     printf('<form method="post" action="%s">', add_query_arg());
 
