@@ -2,7 +2,7 @@
 
 function tsl_print_overview_report($competition_name)
 {
-    $teams = tsl_get_team_list();
+    $teams = tsl_get_competition_teams($competition_name);
 
     $age_group_top_score = array();
     $top_of_age_group = array();
