@@ -13,7 +13,7 @@ function tsl_print_start_page()
         ));
         return sprintf('<li><a href="%s">%s</a></li>', $url, $name);
     }, tsl_get_formgroups_list())));
-    printf('<p><small>Den här listan baseras på vilka Formidable-formulär som heter tsl_<em>tävlingsnamn</em>_<em>delmoment</em>.</small></p>');
+    printf('<p><small>Den här listan baseras på vilka Formidable-formulär som heter tsl-<em>tävlingsnamn</em>-<em>delmoment</em>.</small></p>');
 }
 
 
