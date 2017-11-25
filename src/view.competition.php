@@ -38,7 +38,8 @@ function tsl_print_competition_page($competition_name)
                 return $section->form_name;
             }, $sections)))));
     printf('<tbody>');
-    $teams = tsl_get_team_list();
+    $teams = tsl_get_competition_teams($competition_name);
+
     foreach ($teams as $team) {
         if ($team->team_name) {
             $url = add_query_arg(array(
@@ -65,11 +66,4 @@ function tsl_print_competition_page($competition_name)
         }
     }
     printf('</tbody></table>');
-}
-
-function tsl_get_team_list()
-{
-    global $wpdb;
-    $results = $wpdb->get_results(SQL_TEAM_LIST);
-    return $results;
 }

@@ -44,14 +44,27 @@ SELECT
   um.user_id    user_id,
   m2.meta_value age_group
 FROM wp_frm_item_metas m
-  INNER JOIN wp_frm_item_metas m2 ON m.item_id = m2.item_id
-  LEFT JOIN wp_usermeta um ON (um.meta_value = m.meta_value AND um.meta_key = 'nickname')
-WHERE m.field_id IN (SELECT id
-                     FROM wp_frm_fields
-                     WHERE name = 'Gruppnamn')
+  INNER JOIN wp_frm_fields f
+    ON f.id = m.field_id
+  INNER JOIN wp_frm_forms frm
+    ON f.form_id = frm.id
+  LEFT JOIN wp_frm_forms frm_parent
+    ON frm.parent_form_id = frm_parent.id
+  INNER JOIN wp_frm_item_metas m2
+    ON m.item_id = m2.item_id
+  LEFT JOIN wp_usermeta um
+    ON (um.meta_value = m.meta_value AND um.meta_key = 'nickname')
+WHERE (
+        frm.form_key LIKE %s
+        OR
+        frm_parent.form_key LIKE %s
+      )
+      AND m.field_id IN (SELECT id
+                         FROM wp_frm_fields
+                         WHERE field_key LIKE %s)
       AND m2.field_id IN (SELECT id
                           FROM wp_frm_fields
-                          WHERE field_key = 'xyzrk')
+                          WHERE field_key LIKE %s)
 ORDER BY m.meta_value
 SQL;
 

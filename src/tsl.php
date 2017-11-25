@@ -33,7 +33,7 @@ add_action('admin_menu', 'tsl_add_menu');
 
 function tsl_add_menu()
 {
-    add_menu_page('TSL', 'TSL', 'manage_options', SLUG, 'tsl_show_page');
+    add_menu_page('Tunnelbanejakten', 'Tunnelbanejakten', 'manage_options', SLUG, 'tsl_show_page', plugins_url('tsl/TSL-Ikon-Gray-20x20.png'));
 }
 
 function tsl_show_page()
@@ -123,7 +123,8 @@ function tsl_sql_questions_and_team_answers($team_form_field_key_prefix = 'team'
     return $results;
 }
 
-function tsl_get_competitions_forms_and_question_count($team_form_field_key_prefix = 'team', $competition_forms_key_prefix = 'tsl18') {
+function tsl_get_competitions_forms_and_question_count($team_form_field_key_prefix = 'team', $competition_forms_key_prefix = 'tsl18')
+{
     global $wpdb;
     $query = $wpdb->prepare(SQL_TSL_COMPETITION_FORMS_AND_QUESTION_COUNT,
         "tsl-$competition_forms_key_prefix-%",
@@ -133,13 +134,28 @@ function tsl_get_competitions_forms_and_question_count($team_form_field_key_pref
     return $results;
 
 }
-function tsl_get_answers_per_section_and_team($competition_forms_key_prefix = 'tsl18') {
+
+function tsl_get_answers_per_section_and_team($competition_forms_key_prefix = 'tsl18')
+{
     global $wpdb;
     $query = $wpdb->prepare(SQL_ANSWERS_PER_SECTION_AND_TEAM,
         "team%",
         "tsl-$competition_forms_key_prefix-%",
         "tsl-$competition_forms_key_prefix-%",
         "team%");
+
+    $results = $wpdb->get_results($query);
+
+    return $results;
+}
+
+function tsl_get_competition_teams($competition_forms_key_prefix = 'tsl18')
+{
+    global $wpdb;
+    $query = $wpdb->prepare(SQL_TEAM_LIST,
+        "tsl-$competition_forms_key_prefix-%",
+        "tsl-$competition_forms_key_prefix-%",
+        'team_name%', 'age_group%');
 
     $results = $wpdb->get_results($query);
     return $results;
