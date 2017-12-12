@@ -57,57 +57,119 @@ function tsl_show_page()
     }
 }
 
-function tsl_get_competition_answers($competition_name)
+function tsl_get_competition_answers($competition_forms_key_prefix)
 {
-    $all_answers = get_option("tsl_answers");
+    global $wpdb;
 
-    if (is_array($all_answers) && isset($all_answers[$competition_name])) {
-        return $all_answers[$competition_name];
+    $query = $wpdb->prepare(SQL_COMPETITION_ANSWERS,
+        "tsl-$competition_forms_key_prefix-%",
+        "tsl-$competition_forms_key_prefix-%");
+
+    $results = $wpdb->get_results($query);
+    if ($results) {
+        $answers = [];
+        foreach ($results as $result) {
+            $answers[$result->frm_field_key] = array(
+                'type' => $result->grading_policy,
+                'params' => explode(';', $result->grading_policy_parameter)
+            );
+            if ($result->points > 0) {
+                $answers[$result->frm_field_key]['points'] = $result->points;
+            }
+        }
+        return $answers;
     }
+
     return array();
 }
 
 function tsl_update_competition_answers($competition_name, $answers)
 {
-    $all_answers = get_option("tsl_answers");
+    global $wpdb;
 
-    if (!is_array($all_answers)) {
-        $all_answers = array();
-        add_option("tsl_answers", $all_answers, null, 'no');
+    foreach ($answers as $question_key => $answer_config) {
+        $answer_type = $answer_config['type'];
+        $answer_params = !empty($answer_config['params']) ? join(';', $answer_config['params']) : '';
+        $answer_points = $answer_config['points'];
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT INTO " . $wpdb->prefix . "tsl_answers
+                (frm_field_key, grading_policy, grading_policy_parameter, points)
+                VALUES
+                  (%s, %s, %s, %f)
+                ON DUPLICATE KEY UPDATE
+                  grading_policy           = values(grading_policy),
+                  grading_policy_parameter = values(grading_policy_parameter),
+                  points                   = values(points)",
+                $question_key,
+                $answer_type,
+                $answer_params,
+                $answer_points
+            )
+        );
     }
-
-    $all_answers[$competition_name] = $answers;
-
-    update_option("tsl_answers", $all_answers);
 }
 
-function tsl_get_grades_overrides($team_name)
+function tsl_set_checked($competition_name, $team_name)
 {
-    $all_overrides = get_option("tsl_points_overrides");
+    global $wpdb;
 
-    if (is_array($all_overrides) && isset($all_overrides[$team_name])) {
-        return $all_overrides[$team_name];
-    }
-    return array();
+    $wpdb->query(
+        $wpdb->prepare(
+            "INSERT INTO " . $wpdb->prefix . "tsl_check_timestamps
+                (competition_key, team_name, checked_at)
+                VALUES
+                  (%s, %s, CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE
+                  checked_at           = CURRENT_TIMESTAMP",
+            $competition_name,
+            $team_name
+        )
+    );
+
 }
 
-function tsl_update_grades_overrides($team_name, $points)
+function tsl_get_checked($competition_name, $team_name)
 {
-    $all_overrides = get_option("tsl_points_overrides");
-
-    if (!is_array($all_overrides)) {
-        $all_overrides = array();
-        add_option("tsl_points_overrides", $all_overrides, null, 'no');
-    }
-
-    $all_overrides[$team_name] = $points;
-
-    update_option("tsl_points_overrides", $all_overrides);
+    global $wpdb;
+    $query = $wpdb->prepare('SELECT checked_at FROM wp_tsl_check_timestamps WHERE competition_key = %s AND team_name = %s',
+        $competition_name,
+        $team_name);
+    $results = $wpdb->get_results($query);
+    return !empty($results) ? $results[0]->checked_at : null;
 }
 
-function tsl_get_questions_and_team_answers($competition_name, $team_name)
+function tsl_set_points_override($entry_id, $question_key, $points)
 {
-    return tsl_sql_questions_and_team_answers("team", $competition_name, $team_name);
+    global $wpdb;
+    if (!empty($entry_id) && !empty($question_key)) {
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT INTO " . $wpdb->prefix . "tsl_overrides
+                      (frm_items_id, frm_field_key, points)
+                    VALUES
+                      (%d, %s, %f)
+                    ON DUPLICATE KEY UPDATE
+                      points                   = values(points)",
+                $entry_id,
+                $question_key,
+                $points
+            )
+        );
+    }
+}
+function tsl_unset_points_override($entry_id, $question_key)
+{
+    global $wpdb;
+    if (!empty($entry_id) && !empty($question_key)) {
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM " . $wpdb->prefix . "tsl_overrides WHERE frm_items_id = %d AND frm_field_key = %s",
+                $entry_id,
+                $question_key
+            )
+        );
+    }
 }
 
 function tsl_sql_questions_and_team_answers($team_form_field_key_prefix = 'team', $competition_forms_key_prefix = 'tsl18', $team_name)
@@ -138,6 +200,7 @@ function tsl_get_competitions_forms_and_question_count($team_form_field_key_pref
 function tsl_get_answers_per_section_and_team($competition_forms_key_prefix = 'tsl18')
 {
     global $wpdb;
+    $wpdb->show_errors(true);
     $query = $wpdb->prepare(SQL_ANSWERS_PER_SECTION_AND_TEAM,
         "team%",
         "tsl-$competition_forms_key_prefix-%",
@@ -166,9 +229,13 @@ function tsl_grades_automated($competition_name, $team_name)
 {
     $response = array();
     $correct_answers = tsl_get_competition_answers($competition_name);
-    $questions_and_submitted_answers = tsl_get_questions_and_team_answers($competition_name, $team_name);
+    $questions_and_submitted_answers = tsl_sql_questions_and_team_answers("team", $competition_name, $team_name);
     foreach ($questions_and_submitted_answers as $question_and_submitted_answer) {
         $question_key = $question_and_submitted_answer->question_key;
+        if (isset($question_and_submitted_answer->override_points) && $question_and_submitted_answer->override_points != null) {
+            $response[$question_key] = floatval($question_and_submitted_answer->override_points);
+            continue;
+        }
         if (isset($correct_answers[$question_key])) {
             $correct_answer = $correct_answers[$question_key];
 
@@ -221,15 +288,6 @@ function tsl_grades_automated($competition_name, $team_name)
 
 function tsl_grade_final($competition_name, $team_name)
 {
-    $score = 0.0;
     $auto_points = tsl_grades_automated($competition_name, $team_name);
-    $override_points = tsl_get_grades_overrides($team_name);
-    foreach ($auto_points as $question_key => $points) {
-        if (!empty($override_points[$question_key])) {
-            $score += $override_points[$question_key];
-        } else {
-            $score += $points;
-        }
-    }
-    return $score;
+    return array_sum(array_values($auto_points));
 }

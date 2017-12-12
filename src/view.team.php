@@ -2,26 +2,32 @@
 
 include_once 'sql/queries.php';
 
-const COLOR_RED = '#ff9999';
+const COLOR_RED = '#ffcc99';
 const COLOR_YELLOW = '#ffff99';
-const COLOR_GREEN = '#99ff99';
+const COLOR_GREEN = '#aaeeaa';
 
 function tsl_print_nextgen_report($competition_name, $team_name)
 {
     $entries = tsl_sql_questions_and_team_answers('team', $competition_name, $team_name);
 
     if ($_POST['tsl_action'] == 'save_points_overrides') {
-        $updated_overrides = tsl_get_grades_overrides($team_name);
         foreach ($entries as $entry) {
-            $override = $_POST['question_' . $entry->question_key . '_points_override'];
+            $key = $entry->entry_id . '-' . $entry->question_key;
+            $override = $_POST['question_' . $key . '_points_override'];
+
             if (!empty($override) && floatval($override) > 0) {
-                $updated_overrides[$entry->question_key] = floatval($override);
-            } else {
-                unset($updated_overrides[$entry->question_key]);
+                tsl_set_points_override($entry->entry_id, $entry->question_key, floatval($override));
+                $entry->override_points = floatval($override);
+            } elseif ($entry->override_points > 0) {
+                tsl_unset_points_override($entry->entry_id, $entry->question_key);
+                $entry->override_points = null;
             }
         }
-        tsl_update_grades_overrides($team_name, $updated_overrides);
+
+        tsl_set_checked($competition_name, $team_name);
     }
+
+    $check_timestamp = tsl_get_checked($competition_name, $team_name);
 
     $start_url = add_query_arg(array(
         'tsl_report' => '',
@@ -43,15 +49,15 @@ function tsl_print_nextgen_report($competition_name, $team_name)
 
     printf('<form method="post" action="%s">', add_query_arg());
 
-    printf('<table style="border-collapse: collapse;" cellpadding="3"><tbody>');
-
-    printf('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>', 'Fråga', 'Rätt svar', 'Inskickat', 'Beräknad poäng', 'Korrigerad poäng');
+    printf('<table style="border-collapse: collapse;" cellpadding="3">');
+    printf('<thead><tr><td colspan="5" style="text-align: right"><button class="button button-primary" type="submit" name="tsl_action" value="save_points_overrides">Spara korrigerade poäng och markera svaren som rättade</button></td></tr></thead>');
+    printf('<tfoot><tr><td colspan="5" style="text-align: right"><button class="button button-primary" type="submit" name="tsl_action" value="save_points_overrides">Spara korrigerade poäng och markera svaren som rättade</button></td></tr></tfoot>');
+    printf('<tbody>');
+    printf('<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>', 'Fråga', 'Rätt svar', 'Inskickat', 'Korr. poäng', 'Poäng');
 
     $points_auto_evaluated = tsl_grades_automated($competition_name, $team_name);
 
     $correct_answers = tsl_get_competition_answers($competition_name);
-
-    $points_overrides = tsl_get_grades_overrides($team_name);
 
     $prev_form_name = null;
     foreach ($entries as $entry) {
@@ -87,28 +93,27 @@ function tsl_print_nextgen_report($competition_name, $team_name)
                 '<td><kbd>%s</kbd>: %s</td>' .
                 '<td><small><em>%s</em></small></td>' .
                 '<td>%s</td>' .
-                '<td style="background-color: %s">%s %s</td>' .
-                '<td><input type="text" name="question_%s_points_override" value="%s" size="5"/></td>' .
+                '<td>%s</td>' .
+                '<td><span style="background-color: %s; padding: 0.4em 0.6em;">%s %s</span></td>' .
                 '</tr>',
                 $entry->question_key,
                 $entry->question_text,
                 $correct_answer,
                 $submitted_answer,
+                empty($entry->entry_id) ? '' :
+                    sprintf('<input type="text" name="question_%s_points_override" value="%s" size="5"/>%s',
+                        $entry->entry_id . '-' . $entry->question_key,
+                        $entry->override_points,
+                        $entry->entry_time > $check_timestamp ? '<span style="color: orange" class="dashicons dashicons-warning"></span>' : '<span style="color: green" class="dashicons dashicons-yes"></span>'
+                    ),
                 empty($submitted_answer) ? COLOR_YELLOW : ($auto_points == $max_points ? COLOR_GREEN : COLOR_RED),
                 (float)$auto_points,
-                $max_points > 0 ? "av $max_points" : "",
-                $entry->question_key,
-                $points_overrides[$entry->question_key]);
+                $max_points > 0 ? "av $max_points" : "");
         }
         $prev_form_name = $entry->form_name;
     }
 
     printf('</tbody></table>');
-
-    printf('<button type="submit" name="tsl_action" value="save_points_overrides">Save</button>');
-
-    $final_score = tsl_grade_final($competition_name, $team_name);
-    printf('<p>Totalpoäng: %s</p>', $final_score);
 
     printf('</form>');
 }

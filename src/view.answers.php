@@ -117,7 +117,7 @@ function tsl_print_answers_form($competition_name)
 
     printf('</tbody></table>');
 
-    printf('<button type="submit" name="tsl_action" value="save">Save</button>');
+    printf('<button class="button button-primary" type="submit" name="tsl_action" value="save">Save</button>');
 
     printf('</form>');
 }

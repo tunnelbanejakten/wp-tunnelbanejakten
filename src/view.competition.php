@@ -28,6 +28,7 @@ function tsl_print_competition_page($competition_name)
     $items = tsl_get_answers_per_section_and_team($competition_name);
 
     printf('<h2>Lag</h2>', $url);
+    printf('<p><span class="dashicons dashicons-yes"></span> betyder att något godkänt svaren. <br><span class="dashicons dashicons-warning"></span> betyder att svar har ändrats sedan någon kontrollerade svaren senast.</p>');
     printf('<table>');
     printf('<thead><tr>%s</tr></thead>', join(array_map(
         function ($item) {
@@ -36,7 +37,7 @@ function tsl_print_competition_page($competition_name)
         array_merge(['Lag'], array_map(
             function ($section) {
                 return $section->form_name;
-            }, $sections)))));
+            }, $sections), ['Rättad']))));
     printf('<tbody>');
     $teams = tsl_get_competition_teams($competition_name);
 
@@ -47,19 +48,23 @@ function tsl_print_competition_page($competition_name)
                 'tsl_team' => $team->team_name
             ));
             printf('<tr><td><a href="%s">%s</a></td>%s</tr>', $url, $team->team_name, join("", array_map(
-                function ($section) use ($items, $team) {
+                function ($section) use ($items, $team, $competition_name) {
                     $matches = array_filter($items, function ($item) use ($team, $section) {
                         return $item->team == $team->team_name && $item->form_key == $section->form_key;
                     });
                     $first_match = reset($matches);
                     $questions_answered = intval($first_match->number_of_answers);
+                    $last_update = $first_match->last_update;
                     $questions_total = $section->question_count;
                     if ($questions_total > 0) {
                         $percent_done = round(100.0 * $questions_answered / $questions_total);
                     } else {
                         $percent_done = 0;
                     }
-                    return sprintf('<td><div style="display: inline-block; height: 1em; border: 1px solid rgba(0,0,0,0.1); width: 10em; line-height: 1em;"><div style="display: inline-block; height: 1em; background-color: rgba(0,0,0,0.1); width: %d%%"></div></div>', $percent_done) . '</td>';
+
+                    $last_checked = tsl_get_checked($competition_name, $team->team_name);
+
+                    return sprintf('<td><div style="display: inline-block; height: 1.5em; border: 1px solid rgba(0,0,0,0.1); width: 10em; line-height: 1.5em;"><div style="display: inline-block; height: 1.5em; background-color: rgba(0,0,0,0.1); width: %d%%">%s</div></div></td>', $percent_done, $percent_done > 0 ? ($last_update < $last_checked ? '<span style="color: green" class="dashicons dashicons-yes"></span>' : '<span style="color: orange" class="dashicons dashicons-warning"></span>') : '');
                 }, $sections)));
         } else {
             printf('<tr><td>%s</td></tr>', $team->team_name);

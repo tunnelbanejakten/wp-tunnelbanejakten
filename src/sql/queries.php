@@ -5,7 +5,11 @@ SELECT
   f.name                              question_text,
   f.field_key                         question_key,
   f.type                              type,
-  substr(answers.meta_value, 1, 100)  submitted_answer
+  substr(answers.meta_value, 1, 100)  submitted_answer,
+  entries.id                          entry_id,
+  entries.updated_at                  entry_time,
+  overrides.points                    override_points,
+  overrides.updated_at                override_points_time
 FROM
   wp_frm_fields f
   INNER JOIN wp_frm_forms frm
@@ -25,6 +29,10 @@ FROM
                                                        WHERE
                                                          f.field_key LIKE %s
                                                          AND coalesce(um.meta_value, u.display_name, m.meta_value) = %s)
+  LEFT JOIN wp_frm_items entries 
+    ON answers.item_id = entries.id
+  LEFT JOIN wp_tsl_overrides overrides 
+    ON (overrides.frm_field_key = f.field_key AND overrides.frm_items_id = entries.id)
 WHERE (f.form_id IN (SELECT id
                      FROM wp_frm_forms
                      WHERE form_key LIKE %s)
@@ -35,7 +43,9 @@ WHERE (f.form_id IN (SELECT id
                                                  WHERE form_key LIKE %s)))
       AND f.field_key NOT LIKE %s
       AND f.type NOT IN ('end_divider', 'user_id')
-ORDER BY coalesce(frm_parent.id, frm.id), f.field_order
+ORDER BY 
+  coalesce(frm_parent.id, frm.id), 
+  f.field_order
 SQL;
 
 const SQL_TEAM_LIST = <<<SQL
@@ -110,11 +120,14 @@ SELECT
   coalesce(user_who_submitted_nickname.meta_value,
            user_who_submitted.display_name,
            left(other_answer_in_submission.meta_value, 20)) team,
-  count(*)                                                  number_of_answers
+  count(*)                                                  number_of_answers,
+  max(items.updated_at) last_update
 FROM
   wp_frm_fields question
   INNER JOIN wp_frm_item_metas answer
     ON question.id = answer.field_id
+  INNER JOIN wp_frm_items items
+    ON answer.item_id = items.id
 
   # Get the name for the form (either directly or indirectly for the parent form)
   INNER JOIN wp_frm_forms question_form
@@ -172,4 +185,21 @@ GROUP BY
   # form key:
   coalesce(question_form_parent.form_key, question_form.form_key)
 ORDER BY 1
+SQL;
+
+const SQL_COMPETITION_ANSWERS = <<<SQL
+SELECT
+  answers.frm_field_key,
+  answers.grading_policy,
+  answers.grading_policy_parameter,
+  answers.points
+FROM wp_tsl_answers answers
+  INNER JOIN wp_frm_fields fields ON answers.frm_field_key = fields.field_key
+  INNER JOIN wp_frm_forms forms ON forms.id = fields.form_id
+  LEFT JOIN wp_frm_forms parent_forms ON parent_forms.id = forms.parent_form_id
+WHERE (
+  forms.form_key LIKE %s
+  OR
+  parent_forms.form_key LIKE %s
+)
 SQL;
