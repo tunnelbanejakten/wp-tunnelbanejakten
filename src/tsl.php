@@ -8,6 +8,7 @@
     Author URI: https://tunnelbanejakten.se
 */
 
+include_once 'db.init.php';
 include_once 'view.start.php';
 include_once 'view.team.php';
 include_once 'view.competition.php';
@@ -30,6 +31,10 @@ $defaultValidator = function ($userAnswer, $correctAnswers) {
 };
 
 add_action('admin_menu', 'tsl_add_menu');
+
+add_action('plugins_loaded', 'tsl_db_migrate');
+
+register_activation_hook( __FILE__, 'tsl_db_migrate' );
 
 function tsl_add_menu()
 {
@@ -158,6 +163,7 @@ function tsl_set_points_override($entry_id, $question_key, $points)
         );
     }
 }
+
 function tsl_unset_points_override($entry_id, $question_key)
 {
     global $wpdb;
