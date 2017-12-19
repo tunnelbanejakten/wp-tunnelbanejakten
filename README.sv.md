@@ -41,7 +41,7 @@ Funktionalitet i Wordpress administrationssida:
 
 ### Starta lokal Wordpress-installation med Docker
 
-Kopiera Formidable Forms från ```ftp.tunnelbanejakten.se``` till denna mapp:
+Kopiera Formidable Forms (/var/www/html/wp-content/plugins/formidable) från ```tunnelbanejakten.se``` till denna mapp:
 
     ./docker/base/html/wp-content/plugins/formidable
 
