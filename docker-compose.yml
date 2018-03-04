@@ -9,7 +9,6 @@ services:
       - db
     ports:
       - 8081:80
-    restart: always
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
@@ -26,7 +25,6 @@ services:
       - db_data:/var/lib/mysql
     ports:
       - 3306:3306
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: somewordpress
       MYSQL_DATABASE: wordpress
