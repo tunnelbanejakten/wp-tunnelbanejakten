@@ -26,8 +26,10 @@ De här kraven måste vara uppfyllda för att systemet ska fungera:
 - Varje tävling måste ha ett anmälningsformulär med tre specifika fält:
   - Lista med åldersgrupper med field_key="age_group"
   - Textfält för patrullnamn med field_key="team_name"
+  - Textfält för telefonnummer med field_key="phone_primary" resp. field_key="phone_secondary"
   - Fält som lagrar användarnamnet på den som skickar in anmälningen (varje patrull antas ha 
     skapat ett användarkonto i Wordpress, och loggat in, innan de går till anmälningsformuläret).
+- Patrullens användare i Wordpress identifieras genom att patrullens namn anges som användarens smeknamn
 
 Funktionalitet i Wordpress administrationssida:
 
@@ -60,3 +62,10 @@ Första gången du startar applikationen måste du konfigurera Wordpress. Det ha
 sätta ett lösenord på ditt lokala adminstratörskonto.
 
 Klicka på "Tunnelbanejakten" längst ner i Wordpress-menyn.
+
+### Uppdatera Wordpress-installation på tunnelbanejakten.se
+
+0. Fråga efter inloggningsuppgifter från systemadministratör. 
+   Din användare ska vara medlem i `www-data`.
+   
+0. Uppdatera filerna i `/var/www/html/wp-content/plugins/tsl`  

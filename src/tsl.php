@@ -1,9 +1,9 @@
 <?php
 
 /*
-    Plugin Name: TSL
+    Plugin Name: Tunnelbanejakten
     Description: Made for Tunnelbanejakten.se
-    Version: 1.0.0
+    Version: 1.1.0
     Author: Mattias Forsman and Mikael Svensson
     Author URI: https://tunnelbanejakten.se
 */
@@ -14,6 +14,8 @@ include_once 'view.team.php';
 include_once 'view.competition.php';
 include_once 'view.summary.php';
 include_once 'view.answers.php';
+include_once 'view.sendmessage.php';
+include_once 'view.users.php';
 
 const QUESTION_GRADING_TYPE_IGNORE = "ignore";
 const QUESTION_GRADING_TYPE_SUBMITTED_ANSWER_IS_POINTS = "submitted_answer_is_points";
@@ -23,6 +25,8 @@ const QUESTION_GRADING_TYPE_ALL_OF = "all_of";
 const SLUG = 'tsl';
 const FILE = __FILE__;
 const PATH = __DIR__;
+
+define('SAVEQUERIES', true);
 
 $defaultValidator = function ($userAnswer, $correctAnswers) {
     return !empty($userAnswer) && in_array(strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $userAnswer)), array_map(function ($value) {
@@ -43,6 +47,7 @@ function tsl_add_menu()
 
 function tsl_show_page()
 {
+//    global $wpdb;
     $selected_team = $_GET['tsl_team'];
     $selected_competition = $_GET['tsl_competition'];
     if ($_GET['tsl_report'] == 'points') {
@@ -53,6 +58,10 @@ function tsl_show_page()
         tsl_print_competition_page($selected_competition);
     } elseif ($_GET['tsl_report'] == 'answers') {
         tsl_print_answers_form($selected_competition);
+    } elseif ($_GET['tsl_report'] == 'sendmessage') {
+        tsl_send_messages_form($selected_competition);
+    } elseif ($_GET['tsl_report'] == 'users') {
+        tsl_users($selected_competition);
     } else {
         if (empty($selected_team)) {
             tsl_print_start_page();
@@ -60,6 +69,13 @@ function tsl_show_page()
             tsl_print_responses($selected_team);
         }
     }
+//    $all_queries = array_map(function ($o) {
+//        return preg_replace('/\s+/', ' ', $o[0]);
+//    }, $wpdb->queries);
+//    print '<pre>';
+//    print_r(array_count_values($all_queries));
+//    print_r($all_queries);
+//    print '</pre>';
 }
 
 function tsl_get_competition_answers($competition_forms_key_prefix)
@@ -224,17 +240,24 @@ function tsl_get_competition_teams($competition_forms_key_prefix = 'tsl18')
     $query = $wpdb->prepare(SQL_TEAM_LIST,
         "tsl-$competition_forms_key_prefix-%",
         "tsl-$competition_forms_key_prefix-%",
-        'team_name%', 'age_group%');
+        'team_name%',
+        'age_group%');
 
     $results = $wpdb->get_results($query);
     return $results;
 
 }
 
+$answer_cache = [];
+
 function tsl_grades_automated($competition_name, $team_name)
 {
+    global $answer_cache;
     $response = array();
-    $correct_answers = tsl_get_competition_answers($competition_name);
+    if (!isset($answer_cache[$competition_name])) {
+        $answer_cache[$competition_name] = tsl_get_competition_answers($competition_name);
+    }
+    $correct_answers = $answer_cache[$competition_name];
     $questions_and_submitted_answers = tsl_sql_questions_and_team_answers("team", $competition_name, $team_name);
     foreach ($questions_and_submitted_answers as $question_and_submitted_answer) {
         $question_key = $question_and_submitted_answer->question_key;
@@ -296,4 +319,26 @@ function tsl_grade_final($competition_name, $team_name)
 {
     $auto_points = tsl_grades_automated($competition_name, $team_name);
     return array_sum(array_values($auto_points));
+}
+
+function tsl_get_competition_team_contacts($competition_forms_key_prefix = 'tsl18')
+{
+    global $wpdb;
+    $query = $wpdb->prepare(SQL_TEAM_CONTACTS,
+        "tsl-$competition_forms_key_prefix-%",
+        'team_name%',
+        'age_group%',
+        'phone_primary%',
+        'phone_secondary%');
+
+//    print_r($query);
+
+    $results = $wpdb->get_results($query);
+    return $results;
+
+}
+
+function tsl_derive_password($username)
+{
+    return substr(md5($username), 0, 4);
 }
