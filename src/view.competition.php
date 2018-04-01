@@ -21,6 +21,14 @@ function tsl_print_competition_page($competition_name)
         'tsl_report' => 'answers'
     ));
     printf('<p><a href="%s">Rätt svar</a></p>', $url);
+    $url = add_query_arg(array(
+        'tsl_report' => 'sendmessage'
+    ));
+    printf('<p><a href="%s">Skicka meddelande</a></p>', $url);
+    $url = add_query_arg(array(
+        'tsl_report' => 'users'
+    ));
+    printf('<p><a href="%s">Anv&auml;ndarkonton</a></p>', $url);
 
 
     $sections = tsl_get_competitions_forms_and_question_count('team', $competition_name);

@@ -78,6 +78,39 @@ WHERE (
 ORDER BY m.meta_value
 SQL;
 
+const SQL_TEAM_CONTACTS = <<<SQL
+SELECT
+  m1.meta_value team_name,
+  um.user_id    user_id,
+  u.user_login  user_name,
+  m2.meta_value age_group,
+  m3.meta_value phone_primary,
+  m4.meta_value phone_secondary
+FROM wp_frm_items items
+  INNER JOIN wp_frm_forms frm
+    ON items.form_id = frm.id AND frm.form_key LIKE %s
+  LEFT JOIN wp_frm_item_metas m1
+    ON items.id = m1.item_id AND m1.field_id IN (SELECT id
+                         FROM wp_frm_fields
+                         WHERE field_key LIKE %s)
+  LEFT JOIN wp_frm_item_metas m2
+    ON items.id = m2.item_id AND m2.field_id IN (SELECT id
+                          FROM wp_frm_fields
+                          WHERE field_key LIKE %s)
+  LEFT JOIN wp_frm_item_metas m3
+    ON items.id = m3.item_id AND m3.field_id IN (SELECT id
+                          FROM wp_frm_fields
+                          WHERE field_key LIKE %s)
+  LEFT JOIN wp_frm_item_metas m4
+    ON items.id = m4.item_id AND m4.field_id IN (SELECT id
+                          FROM wp_frm_fields
+                          WHERE field_key LIKE %s)
+  LEFT JOIN wp_usermeta um ON (um.meta_value = m1.meta_value AND um.meta_key = 'nickname')
+  LEFT JOIN wp_users u ON (u.ID = um.user_id)
+WHERE m1.meta_value IS NOT NULL 
+ORDER BY m1.meta_value
+SQL;
+
 const SQL_TSL_FORMS = <<<SQL
 SELECT 
   form_key
