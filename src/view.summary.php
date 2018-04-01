@@ -6,8 +6,16 @@ function tsl_print_overview_report($competition_name)
 
     $age_group_top_score = array();
     $top_of_age_group = array();
+    $team_scores = array_combine(
+        array_map(function ($team) {
+            return $team->team_name;
+        }, $teams),
+        array_map(function ($team) use ($competition_name) {
+            return tsl_grade_final($competition_name, $team->team_name);
+        }, $teams));
+
     foreach ($teams as $team) {
-        $score = tsl_grade_final($competition_name, $team->team_name);
+        $score = $team_scores[$team->team_name];
         $team->score = $score;
         if ($age_group_top_score[$team->age_group] < $score) {
             $age_group_top_score[$team->age_group] = $score;
@@ -81,7 +89,7 @@ function tsl_print_overview_report($competition_name)
             '</tr>',
             $url,
             $team->team_name,
-            tsl_grade_final($competition_name, $team->team_name),
+            $team_scores[$team->team_name],
             $team->score > 0 && $age_group_top_score[$team->age_group] == $team->score ? 'Bäst i klassen' : '');
 
         $last_age_group = $team->age_group;
