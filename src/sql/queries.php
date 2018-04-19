@@ -152,7 +152,7 @@ SELECT
            question_form.form_key)                          form_key,
   coalesce(user_who_submitted_nickname.meta_value,
            user_who_submitted.display_name,
-           left(other_answer_in_submission.meta_value, 20)) team,
+           left(other_answer_in_submission.meta_value, 40)) team,
   count(*)                                                  number_of_answers,
   max(items.updated_at) last_update
 FROM
@@ -213,7 +213,7 @@ GROUP BY
   # team:
   coalesce(user_who_submitted_nickname.meta_value,
            user_who_submitted.display_name,
-           left(other_answer_in_submission.meta_value, 20)),
+           left(other_answer_in_submission.meta_value, 40)),
 
   # form key:
   coalesce(question_form_parent.form_key, question_form.form_key)
