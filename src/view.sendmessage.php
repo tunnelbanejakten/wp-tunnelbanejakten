@@ -102,8 +102,15 @@ function tsl_send_messages_form($competition_name)
 {
     global $valueGetters;
     $teams = tsl_get_competition_team_contacts($competition_name);
+    $teams2 = tsl_get_competition_team_contacts_2($competition_name);
 
-//    print_r($teams);
+    $new_phone_numbers = array_combine(
+        array_map(function ($team2) {
+            return $team2->team_name;
+        }, $teams2),
+        array_map(function ($team2) {
+            return $team2->phone_primary;
+        }, $teams2));
 
     usort($teams, function ($a, $b) {
         $age_group_cmp = strcmp($a->age_group, $b->age_group);
@@ -170,8 +177,16 @@ function tsl_send_messages_form($competition_name)
 
         $is_selected = is_array($selected_team_names) && in_array($team->team_name, $selected_team_names);
 
-        $phone_primary = tsl_fix_phone_number($team->phone_primary);
+        $phone_primary1 = tsl_fix_phone_number($team->phone_primary);
+        $phone_primary2 = tsl_fix_phone_number($new_phone_numbers[$team->team_name]);
+//        if (!empty($phone_primary2) && $phone_primary1 != $phone_primary2) {
+//            printf('<p>Telefon andrades fran %s till %s.</p>', $phone_primary1, $phone_primary2);
+//        }
+        $phone_primary = !empty($phone_primary2) ? $phone_primary2 : $phone_primary1;
         $phone_secondary = tsl_fix_phone_number($team->phone_secondary);
+        if ($phone_primary == $phone_secondary) {
+            $phone_secondary = null;
+        }
 
         $messageHtml = '';
         $statusHtml = '';

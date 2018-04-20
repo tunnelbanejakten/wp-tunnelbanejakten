@@ -107,6 +107,25 @@ FROM wp_frm_items items
                           WHERE field_key LIKE %s)
   LEFT JOIN wp_usermeta um ON (um.meta_value = m1.meta_value AND um.meta_key = 'nickname')
   LEFT JOIN wp_users u ON (u.ID = um.user_id)
+WHERE m1.meta_value IS NOT NULL AND m2.meta_value IS NOT NULL 
+ORDER BY m1.meta_value
+SQL;
+
+const SQL_TEAM_CONTACTS_2 = <<<SQL
+SELECT
+  m1.meta_value team_name,
+  m3.meta_value phone_primary
+FROM wp_frm_items items
+  INNER JOIN wp_frm_forms frm
+    ON items.form_id = frm.id AND frm.form_key LIKE %s
+  LEFT JOIN wp_frm_item_metas m1
+    ON items.id = m1.item_id AND m1.field_id IN (SELECT id
+                         FROM wp_frm_fields
+                         WHERE field_key LIKE %s)
+  LEFT JOIN wp_frm_item_metas m3
+    ON items.id = m3.item_id AND m3.field_id IN (SELECT id
+                          FROM wp_frm_fields
+                          WHERE field_key LIKE %s)
 WHERE m1.meta_value IS NOT NULL 
 ORDER BY m1.meta_value
 SQL;
@@ -152,7 +171,7 @@ SELECT
            question_form.form_key)                          form_key,
   coalesce(user_who_submitted_nickname.meta_value,
            user_who_submitted.display_name,
-           left(other_answer_in_submission.meta_value, 40)) team,
+           left(other_answer_in_submission.meta_value, 60)) team,
   count(*)                                                  number_of_answers,
   max(items.updated_at) last_update
 FROM
@@ -213,7 +232,7 @@ GROUP BY
   # team:
   coalesce(user_who_submitted_nickname.meta_value,
            user_who_submitted.display_name,
-           left(other_answer_in_submission.meta_value, 40)),
+           left(other_answer_in_submission.meta_value, 60)),
 
   # form key:
   coalesce(question_form_parent.form_key, question_form.form_key)

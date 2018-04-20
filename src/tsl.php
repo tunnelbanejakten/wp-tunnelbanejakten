@@ -328,8 +328,23 @@ function tsl_get_competition_team_contacts($competition_forms_key_prefix = 'tsl1
         "tsl-$competition_forms_key_prefix-%",
         'team_name%',
         'age_group%',
-        'phone_primary%',
+        'phone_primary_step1%',
         'phone_secondary%');
+
+//    print_r($query);
+
+    $results = $wpdb->get_results($query);
+    return $results;
+
+}
+
+function tsl_get_competition_team_contacts_2($competition_forms_key_prefix = 'tsl18')
+{
+    global $wpdb;
+    $query = $wpdb->prepare(SQL_TEAM_CONTACTS_2,
+        "tsl-$competition_forms_key_prefix-%",
+        'team_name%',
+        'phone_primary_step2%');
 
 //    print_r($query);
 
