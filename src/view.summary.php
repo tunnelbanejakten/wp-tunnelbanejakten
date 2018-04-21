@@ -50,6 +50,12 @@ function tsl_print_overview_report($competition_name)
         $competition_url,
         $competition_name);
 
+    $age_group_team_count = array_count_values(array_map(function ($team) {
+        return $team->age_group;
+    }, $teams));
+
+    $teams_count = array_sum($age_group_team_count);
+
     printf('<h2>Toppskiktet</h2>');
 
     printf('<table style="border-collapse: collapse;" cellpadding="3"><tbody>');
@@ -70,12 +76,12 @@ function tsl_print_overview_report($competition_name)
 
     printf('</tbody></table>');
 
-    printf('<h2>Alla</h2>');
+    printf('<h2>Alla %d lag</h2>', $teams_count);
     printf('<table style="border-collapse: collapse;" cellpadding="3"><tbody>');
 
     foreach ($teams as $team) {
         if ($last_age_group != $team->age_group) {
-            printf('<tr><td colspan="3"><strong>Åldergrupp %s</strong></td></tr>', $team->age_group);
+            printf('<tr><td colspan="3"><strong>Åldergrupp %s (%d lag)</strong></td></tr>', $team->age_group, $age_group_team_count[$team->age_group]);
         }
         $url = add_query_arg(array(
             'tsl_report' => 'nextgen',
