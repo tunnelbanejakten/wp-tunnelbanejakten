@@ -38,7 +38,16 @@ add_action('admin_menu', 'tsl_add_menu');
 
 add_action('plugins_loaded', 'tsl_db_migrate');
 
-register_activation_hook( __FILE__, 'tsl_db_migrate' );
+register_activation_hook(__FILE__, 'tsl_db_migrate');
+
+add_shortcode('randomfact', 'tsl_randomfact');
+
+//[randomfact]
+function tsl_randomfact($atts)
+{
+    $facts = file(__DIR__.'/random-facts.txt');
+    return $facts[array_rand($facts)];
+}
 
 function tsl_add_menu()
 {
