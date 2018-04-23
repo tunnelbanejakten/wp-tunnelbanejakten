@@ -87,7 +87,7 @@ function tsl_send_message($message, $to, $username46Elks, $password46Elks)
 
 //    var_dump($context);
 
-//    $response = file_get_contents("https://api.46elks.com/a1/SMS", false, $context);
+    $response = file_get_contents("https://api.46elks.com/a1/SMS", false, $context);
 
 //    var_dump($response);
 
